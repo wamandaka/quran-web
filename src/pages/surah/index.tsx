@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams } from "react-router";
 import { useFavorites } from "../../hooks/useFavorites";
 import { useLastRead } from "../../hooks/useLastRead";
 import { capitalizeFirstLetter } from "../../utils/string";
@@ -15,7 +15,6 @@ interface SurahDetail {
 }
 const Surah = () => {
   const { nomor } = useParams();
-  const navigate = useNavigate();
   const [detailSurah, setDetailSurah] = useState<SurahDetail | null>(null);
   const [ayat, setAyat] = useState<
     Array<{
@@ -31,6 +30,8 @@ const Surah = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isAutoScroll, setIsAutoScroll] = useState(false);
+  const [activeAyah, setActiveAyah] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { isFavorite: checkIsFavorite, toggleFavorite: handleToggleFavorite } =
     useFavorites();
@@ -79,15 +80,68 @@ const Surah = () => {
     }
   }, [isLoading, lastRead, nomor]);
 
+  useEffect(() => {
+    // Scroll to active ayah when it changes in auto-scroll mode
+    if (isAutoScroll && activeAyah) {
+      const ayahElement = ayahRefs.current[activeAyah];
+      if (ayahElement) {
+        ayahElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [activeAyah, isAutoScroll]);
+
   // Audio event handlers
   const handlePlayPause = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current
+          .play()
+          .catch((e) => console.error("Playback failed:", e));
       }
       setIsPlaying(!isPlaying);
+    }
+  };
+
+  const playAyah = (nomorAyah: number) => {
+    if (!detailSurah) return;
+
+    // Set active ayah
+    setActiveAyah(nomorAyah);
+    setIsPlaying(true);
+
+    // Find the ayah object to get its global ID
+    const targetAyah = ayat.find((a) => a.nomor === nomorAyah);
+    if (!targetAyah) return;
+
+    // Construct audio URL using global ID from Islamic Network CDN
+    const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${targetAyah.id}.mp3`;
+
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch((e) => {
+        console.error(
+          "Per-ayah playback failed, falling back to full surah audio",
+          e,
+        );
+        // Fallback or handle error
+      });
+    }
+  };
+
+  const handleAudioEnded = () => {
+    if (isAutoScroll && activeAyah && detailSurah) {
+      if (activeAyah < detailSurah.jumlah_ayat) {
+        // Play next ayah
+        playAyah(activeAyah + 1);
+      } else {
+        // End of surah
+        setIsPlaying(false);
+        setActiveAyah(null);
+      }
+    } else {
+      setIsPlaying(false);
     }
   };
 
@@ -258,47 +312,75 @@ const Surah = () => {
                     ref={(el) => {
                       ayahRefs.current[item.nomor] = el;
                     }}
-                    className={`border-b border-gray-200 pb-6 last:border-0 rounded-lg transition-colors ${
-                      lastRead?.surahNomor === detailSurah.nomor &&
-                      lastRead?.ayahNomor === item.nomor
-                        ? "bg-blue-50"
-                        : ""
+                    className={`border-b border-gray-200 pb-6 last:border-0 rounded-lg transition-all duration-300 ${
+                      activeAyah === item.nomor
+                        ? "bg-blue-100 ring-2 ring-blue-400"
+                        : lastRead?.surahNomor === detailSurah.nomor &&
+                            lastRead?.ayahNomor === item.nomor
+                          ? "bg-blue-50"
+                          : ""
                     }`}
                   >
                     <div className="flex items-start p-4">
-                      <div className="shrink-0 flex flex-col items-center mr-4 mt-1">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mb-2">
+                      <div className="shrink-0 flex flex-col items-center mr-4 mt-1 space-y-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
                           {item.nomor}
                         </div>
-                        <button
-                          onClick={() => handleMarkLastRead(item.nomor)}
-                          className={`p-1.5 rounded-full transition-colors ${
-                            lastRead?.surahNomor === detailSurah.nomor &&
-                            lastRead?.ayahNomor === item.nomor
-                              ? "text-blue-600 bg-blue-100"
-                              : "text-gray-400 hover:bg-gray-100"
-                          }`}
-                          title="Mark as last read"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill={
+                        <div className="flex flex-col space-y-2">
+                          <button
+                            onClick={() => handleMarkLastRead(item.nomor)}
+                            className={`p-1.5 rounded-full transition-colors ${
                               lastRead?.surahNomor === detailSurah.nomor &&
                               lastRead?.ayahNomor === item.nomor
-                                ? "currentColor"
-                                : "none"
-                            }
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                                ? "text-blue-600 bg-blue-100"
+                                : "text-gray-400 hover:bg-gray-100"
+                            }`}
+                            title="Mark as last read"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-5 h-5"
+                              fill={
+                                lastRead?.surahNomor === detailSurah.nomor &&
+                                lastRead?.ayahNomor === item.nomor
+                                  ? "currentColor"
+                                  : "none"
+                              }
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsAutoScroll(true);
+                              playAyah(item.nomor);
+                            }}
+                            className={`p-1.5 rounded-full transition-colors ${
+                              activeAyah === item.nomor
+                                ? "text-green-600 bg-green-100"
+                                : "text-gray-400 hover:bg-gray-100"
+                            }`}
+                            title="Play this ayah"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="flex-1">
                         <div className="text-3xl text-right font-arabic mb-4 leading-loose">
@@ -324,89 +406,132 @@ const Surah = () => {
               </div>
             )}
           </div>
-
-          {/* Audio Player */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">
-              Audio Player
-            </h2>
-            <div className="space-y-4">
-              <audio
-                ref={audioRef}
-                src={detailSurah.audio}
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-              />
-
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handlePlayPause}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  aria-label={isPlaying ? "Pause audio" : "Play audio"}
-                >
-                  {isPlaying ? (
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </button>
-
-                <div className="flex-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 100}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <div className="flex justify-between text-sm text-gray-500 mt-1">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Back to Home Button */}
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => navigate("/")}
-              className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
         </div>
       ) : (
         <div className="text-center py-12">
           <p className="text-gray-600">Surah details not available</p>
         </div>
       )}
+      {/* Sticky Bottom Audio Player */}
+      {detailSurah && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 lg:pl-68">
+          <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-md border border-gray-200 shadow-2xl rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+            <audio
+              ref={audioRef}
+              src={detailSurah.audio}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={handleAudioEnded}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+            />
+
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <button
+                onClick={handlePlayPause}
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-90 shadow-lg shadow-blue-200"
+                aria-label={isPlaying ? "Pause audio" : "Play audio"}
+              >
+                {isPlaying ? (
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </button>
+
+              <div className="flex-1 sm:hidden">
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+            </div>
+
+            <div className="hidden sm:flex flex-col flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-bold text-gray-900 truncate uppercase tracking-wider">
+                  {detailSurah.nama_latin}{" "}
+                  {activeAyah ? `— Ayat ${activeAyah}` : "(Full Surah)"}
+                </span>
+                <span className="text-xs font-medium text-gray-500">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const newMode = !isAutoScroll;
+                  setIsAutoScroll(newMode);
+                  if (newMode && !activeAyah) {
+                    playAyah(1);
+                  } else if (!newMode) {
+                    if (audioRef.current) {
+                      audioRef.current.src = detailSurah.audio;
+                      setIsPlaying(false);
+                      setActiveAyah(null);
+                    }
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  isAutoScroll
+                    ? "bg-green-100 text-green-700 ring-2 ring-green-500/20"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                  />
+                </svg>
+                {isAutoScroll ? "Auto-Scroll ON" : "Auto-Scroll OFF"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="h-24"></div> {/* Spacer for fixed bottom player */}
     </div>
   );
 };
