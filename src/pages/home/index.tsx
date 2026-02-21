@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { NavLink } from "react-router";
 import { useFavorites } from "../../hooks/useFavorites";
 import { useLastRead } from "../../hooks/useLastRead";
+import { capitalizeFirstLetter } from "../../utils/string";
 interface Surah {
   nomor: number;
   nama: string;
@@ -152,14 +153,14 @@ function Home() {
             <div className="flex gap-2">
               <select
                 id="place"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 capitalize"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={filterPlace}
                 onChange={(e) => setFilterPlace(e.target.value)}
               >
                 <option value="all">All Places</option>
                 {uniquePlaces.map((place) => (
-                  <option key={place} value={place} className="capitalize">
-                    {place}
+                  <option key={place} value={place}>
+                    {capitalizeFirstLetter(place)}
                   </option>
                 ))}
               </select>
@@ -259,8 +260,8 @@ function Home() {
                   {item.nama_latin}
                 </h3>
                 <p className="mt-1 text-sm text-gray-700">{item.arti}</p>
-                <p className="mt-1 text-xs text-gray-500 capitalize">
-                  Revealed in {item.tempat_turun}
+                <p className="mt-1 text-xs text-gray-500">
+                  Revealed in {capitalizeFirstLetter(item.tempat_turun)}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
                   {item.jumlah_ayat} verses

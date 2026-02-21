@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useFavorites } from "../../hooks/useFavorites";
 import { useLastRead } from "../../hooks/useLastRead";
+import { capitalizeFirstLetter } from "../../utils/string";
 interface SurahDetail {
   nomor: number;
   nama: string;
@@ -154,8 +155,9 @@ const Surah = () => {
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                     {detailSurah.jumlah_ayat} verses
                   </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 capitalize">
-                    Revealed in {detailSurah.tempat_turun}
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    Revealed in{" "}
+                    {capitalizeFirstLetter(detailSurah.tempat_turun)}
                   </span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
                     Surah #{detailSurah.nomor}
