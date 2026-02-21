@@ -152,7 +152,7 @@ function Home() {
             <div className="flex gap-2">
               <select
                 id="place"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 capitalize"
                 value={filterPlace}
                 onChange={(e) => setFilterPlace(e.target.value)}
               >
