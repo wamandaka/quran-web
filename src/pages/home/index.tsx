@@ -158,7 +158,7 @@ function Home() {
               >
                 <option value="all">All Places</option>
                 {uniquePlaces.map((place) => (
-                  <option key={place} value={place}>
+                  <option key={place} value={place} className="capitalize">
                     {place}
                   </option>
                 ))}
@@ -259,7 +259,7 @@ function Home() {
                   {item.nama_latin}
                 </h3>
                 <p className="mt-1 text-sm text-gray-700">{item.arti}</p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 capitalize">
                   Revealed in {item.tempat_turun}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
