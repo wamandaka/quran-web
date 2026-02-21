@@ -94,7 +94,12 @@ function Home() {
   // Get unique places for filter dropdown
   const uniquePlaces = useMemo(() => {
     const places = new Set(surah.map((item) => item.tempat_turun));
-    return Array.from(places).sort();
+    // Custom sort: 'mekah' before 'madinah'
+    return Array.from(places).sort((a, b) => {
+      if (a.toLowerCase() === "mekah") return -1;
+      if (b.toLowerCase() === "mekah") return 1;
+      return a.localeCompare(b);
+    });
   }, [surah]);
 
   if (isLoading) {
