@@ -6,12 +6,12 @@ import { capitalizeFirstLetter } from "../../utils/string";
 interface Surah {
   nomor: number;
   nama: string;
-  nama_latin: string;
-  jumlah_ayat: number;
-  tempat_turun: string;
+  namaLatin: string;
+  jumlahAyat: number;
+  tempatTurun: string;
   arti: string;
   deskripsi: string;
-  audio: string;
+  audioFull: { [key: string]: string };
 }
 function Home() {
   const [surah, setSurah] = useState<Surah[]>([]);
@@ -27,16 +27,13 @@ function Home() {
     let isSubscribed = true;
     const fetchSurah = async () => {
       try {
-        const resp = await fetch(
-          "https://quran-api.santrikoding.com/api/surah",
-        );
+        const resp = await fetch("https://equran.id/api/v2/surat");
         if (!resp.ok) {
           throw new Error("Network response was not ok");
         }
-        const data = await resp.json();
-        console.log(data);
-        if (isSubscribed) {
-          setSurah(data);
+        const result = await resp.json();
+        if (isSubscribed && result.data) {
+          setSurah(result.data);
         }
       } catch (error) {
         console.error("There was a problem with the fetch operation:", error);
@@ -60,7 +57,7 @@ function Home() {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         (item) =>
-          item.nama_latin.toLowerCase().includes(term) ||
+          item.namaLatin.toLowerCase().includes(term) ||
           item.arti.toLowerCase().includes(term) ||
           item.nama.toLowerCase().includes(term),
       );
@@ -68,7 +65,7 @@ function Home() {
 
     // Apply place filter
     if (filterPlace !== "all") {
-      result = result.filter((item) => item.tempat_turun === filterPlace);
+      result = result.filter((item) => item.tempatTurun === filterPlace);
     }
 
     // Apply favorites filter
@@ -81,9 +78,9 @@ function Home() {
       if (sortBy === "nomor") {
         return a.nomor - b.nomor;
       } else if (sortBy === "name") {
-        return a.nama_latin.localeCompare(b.nama_latin);
+        return a.namaLatin.localeCompare(b.namaLatin);
       } else if (sortBy === "verses") {
-        return b.jumlah_ayat - a.jumlah_ayat;
+        return b.jumlahAyat - a.jumlahAyat;
       }
       return 0;
     });
@@ -93,7 +90,7 @@ function Home() {
 
   // Get unique places for filter dropdown
   const uniquePlaces = useMemo(() => {
-    const places = new Set(surah.map((item) => item.tempat_turun));
+    const places = new Set(surah.map((item) => item.tempatTurun));
     // Custom sort: 'mekah' before 'madinah'
     return Array.from(places).sort((a, b) => {
       if (a.toLowerCase() === "mekah") return -1;
@@ -262,14 +259,14 @@ function Home() {
 
               <div>
                 <h3 className="mt-0.5 text-lg font-medium text-gray-900">
-                  {item.nama_latin}
+                  {item.namaLatin}
                 </h3>
                 <p className="mt-1 text-sm text-gray-700">{item.arti}</p>
                 <p className="mt-1 text-xs text-gray-500">
-                  Revealed in {capitalizeFirstLetter(item.tempat_turun)}
+                  Revealed in {capitalizeFirstLetter(item.tempatTurun)}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  {item.jumlah_ayat} verses
+                  {item.jumlahAyat} verses
                 </p>
               </div>
             </article>
