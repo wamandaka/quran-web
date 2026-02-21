@@ -6,24 +6,23 @@ import { capitalizeFirstLetter } from "../../utils/string";
 interface SurahDetail {
   nomor: number;
   nama: string;
-  nama_latin: string;
-  jumlah_ayat: number;
-  tempat_turun: string;
+  namaLatin: string;
+  jumlahAyat: number;
+  tempatTurun: string;
   arti: string;
   deskripsi: string;
-  audio: string;
+  audioFull: { [key: string]: string };
 }
 const Surah = () => {
   const { nomor } = useParams();
   const [detailSurah, setDetailSurah] = useState<SurahDetail | null>(null);
   const [ayat, setAyat] = useState<
     Array<{
-      id: number;
-      surah: number;
-      nomor: number;
-      ar: string;
-      tr: string;
-      idn: string;
+      nomorAyat: number;
+      teksArab: string;
+      teksLatin: string;
+      teksIndonesia: string;
+      audio: { [key: string]: string };
     }>
   >([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,17 +43,15 @@ const Surah = () => {
     // Fetch surah details using the nomor parameter
     const fetchSurahDetails = async () => {
       try {
-        const resp = await fetch(
-          `https://quran-api.santrikoding.com/api/surah/${nomor}`,
-        );
+        const resp = await fetch(`https://equran.id/api/v2/surat/${nomor}`);
         if (!resp.ok) {
           throw new Error("Network response was not ok");
         }
-        const data = await resp.json();
-        console.log(data);
-        // You can set the data to state here if needed
-        setDetailSurah(data);
-        setAyat(data.ayat);
+        const result = await resp.json();
+        if (result.data) {
+          setDetailSurah(result.data);
+          setAyat(result.data.ayat);
+        }
       } catch (error) {
         console.error("There was a problem with the fetch operation:", error);
       } finally {
@@ -111,12 +108,12 @@ const Surah = () => {
     setActiveAyah(nomorAyah);
     setIsPlaying(true);
 
-    // Find the ayah object to get its global ID
-    const targetAyah = ayat.find((a) => a.nomor === nomorAyah);
+    // Find the ayah object to get its audio URL
+    const targetAyah = ayat.find((a) => a.nomorAyat === nomorAyah);
     if (!targetAyah) return;
 
-    // Construct audio URL using global ID from Islamic Network CDN
-    const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${targetAyah.id}.mp3`;
+    // Use Alafasy ('05' in EQuran.id v2)
+    const audioUrl = targetAyah.audio["05"];
 
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
@@ -132,7 +129,7 @@ const Surah = () => {
 
   const handleAudioEnded = () => {
     if (isAutoScroll && activeAyah && detailSurah) {
-      if (activeAyah < detailSurah.jumlah_ayat) {
+      if (activeAyah < detailSurah.jumlahAyat) {
         // Play next ayah
         playAyah(activeAyah + 1);
       } else {
@@ -179,7 +176,7 @@ const Surah = () => {
     if (detailSurah) {
       setLastRead({
         surahNomor: detailSurah.nomor,
-        surahName: detailSurah.nama_latin,
+        surahName: detailSurah.namaLatin,
         ayahNomor: ayahNomor,
       });
     }
@@ -202,16 +199,15 @@ const Surah = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {detailSurah.nama_latin}
+                  {detailSurah.namaLatin}
                 </h1>
                 <p className="text-gray-600 mt-1">{detailSurah.nama}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {detailSurah.jumlah_ayat} verses
+                    {detailSurah.jumlahAyat} verses
                   </span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    Revealed in{" "}
-                    {capitalizeFirstLetter(detailSurah.tempat_turun)}
+                    Revealed in {capitalizeFirstLetter(detailSurah.tempatTurun)}
                   </span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
                     Surah #{detailSurah.nomor}
@@ -308,15 +304,15 @@ const Surah = () => {
               <div className="space-y-6">
                 {ayat.map((item) => (
                   <div
-                    key={item.id}
+                    key={item.nomorAyat}
                     ref={(el) => {
-                      ayahRefs.current[item.nomor] = el;
+                      ayahRefs.current[item.nomorAyat] = el;
                     }}
                     className={`border-b border-gray-200 pb-6 last:border-0 rounded-lg transition-all duration-300 ${
-                      activeAyah === item.nomor
+                      activeAyah === item.nomorAyat
                         ? "bg-blue-100 ring-2 ring-blue-400"
                         : lastRead?.surahNomor === detailSurah.nomor &&
-                            lastRead?.ayahNomor === item.nomor
+                            lastRead?.ayahNomor === item.nomorAyat
                           ? "bg-blue-50"
                           : ""
                     }`}
@@ -324,14 +320,14 @@ const Surah = () => {
                     <div className="flex items-start p-4">
                       <div className="shrink-0 flex flex-col items-center mr-4 mt-1 space-y-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
-                          {item.nomor}
+                          {item.nomorAyat}
                         </div>
                         <div className="flex flex-col space-y-2">
                           <button
-                            onClick={() => handleMarkLastRead(item.nomor)}
+                            onClick={() => handleMarkLastRead(item.nomorAyat)}
                             className={`p-1.5 rounded-full transition-colors ${
                               lastRead?.surahNomor === detailSurah.nomor &&
-                              lastRead?.ayahNomor === item.nomor
+                              lastRead?.ayahNomor === item.nomorAyat
                                 ? "text-blue-600 bg-blue-100"
                                 : "text-gray-400 hover:bg-gray-100"
                             }`}
@@ -341,7 +337,7 @@ const Surah = () => {
                               className="w-5 h-5"
                               fill={
                                 lastRead?.surahNomor === detailSurah.nomor &&
-                                lastRead?.ayahNomor === item.nomor
+                                lastRead?.ayahNomor === item.nomorAyat
                                   ? "currentColor"
                                   : "none"
                               }
@@ -359,10 +355,10 @@ const Surah = () => {
                           <button
                             onClick={() => {
                               setIsAutoScroll(true);
-                              playAyah(item.nomor);
+                              playAyah(item.nomorAyat);
                             }}
                             className={`p-1.5 rounded-full transition-colors ${
-                              activeAyah === item.nomor
+                              activeAyah === item.nomorAyat
                                 ? "text-green-600 bg-green-100"
                                 : "text-gray-400 hover:bg-gray-100"
                             }`}
@@ -384,16 +380,16 @@ const Surah = () => {
                       </div>
                       <div className="flex-1">
                         <div className="text-3xl text-right font-arabic mb-4 leading-loose">
-                          {item.ar}
+                          {item.teksArab}
                         </div>
                         <div
                           className="text-gray-700 mb-2 text-lg"
-                          dangerouslySetInnerHTML={{ __html: item.tr }}
+                          dangerouslySetInnerHTML={{ __html: item.teksLatin }}
                         >
                           {/* Content rendered via dangerouslySetInnerHTML */}
                         </div>
                         <div className="text-gray-600 text-base">
-                          {item.idn}
+                          {item.teksIndonesia}
                         </div>
                       </div>
                     </div>
@@ -418,7 +414,7 @@ const Surah = () => {
           <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-md border border-gray-200 shadow-2xl rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
             <audio
               ref={audioRef}
-              src={detailSurah.audio}
+              src={detailSurah.audioFull["05"]}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               onEnded={handleAudioEnded}
@@ -474,7 +470,7 @@ const Surah = () => {
             <div className="hidden sm:flex flex-col flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-bold text-gray-900 truncate uppercase tracking-wider">
-                  {detailSurah.nama_latin}{" "}
+                  {detailSurah.namaLatin}{" "}
                   {activeAyah ? `— Ayat ${activeAyah}` : "(Full Surah)"}
                 </span>
                 <span className="text-xs font-medium text-gray-500">
@@ -500,7 +496,7 @@ const Surah = () => {
                     playAyah(1);
                   } else if (!newMode) {
                     if (audioRef.current) {
-                      audioRef.current.src = detailSurah.audio;
+                      audioRef.current.src = detailSurah.audioFull["05"];
                       setIsPlaying(false);
                       setActiveAyah(null);
                     }
