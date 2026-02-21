@@ -1,73 +1,56 @@
-# React + TypeScript + Vite
+# Web Quran App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, fast, and responsive Al-Quran web application built with React, TypeScript, and Tailwind CSS. This application is designed to provide a premium reading and listening experience for users, especially for the Indonesian community.
 
-Currently, two official plugins are available:
+## 🌟 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **📖 114 Surahs**: Complete Quranic data with Arabic text, Latin transliteration, and Indonesian translation.
+- **🎧 Per-Ayat Audio**: Listen to individual ayahs from 6 different Qaris (Default: Mishary Rashid Al-Afasy).
+- **🔄 Auto-Scroll & Read Along**: The page automatically scrolls to the active ayah during audio playback, with real-time highlighting.
+- **📌 Last Read Bookmark**: Automatically remembers your last read surah and ayah, so you can pick up where you left off.
+- **❤️ Favorites**: Mark your most-read surahs as favorites for quick access from the sidebar.
+- **🕌 Prayer Times (Jadwal Sholat)**: Accurate prayer schedule for over 517 cities in Indonesia, including Imsak, Subuh, Terbit, Dhuha, Dzuhur, Ashar, Maghrib, and Isya.
+- **📱 Responsive Design**: Optimized for mobile, tablet, and desktop views with a sleek sticky bottom player.
+- **🔍 Search & Filter**: Quickly find surahs by name, meaning, or revelation place.
 
-## React Compiler
+## 🛠️ Technology Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18** - UI Framework
+- **TypeScript** - Type Safety
+- **Vite** - Build Tool
+- **Tailwind CSS** - Styling
+- **React Router** - Navigation
+- **Local Storage API** - Data Persistence
 
-## Expanding the ESLint configuration
+## 🔌 API Sources
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+This application uses data from the robust and stable [EQuran.id API v2](https://equran.id/apidev), which provides:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Quranic text and Indonesian translations (Kemenag).
+- Multi-reciter audio CDN.
+- Official Indonesian Prayer Times data.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clone the repository**
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+   ```bash
+   git clone [repository-url]
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2. **Install dependencies**
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+   ```bash
+   npm install
+   ```
+
+3. **Run the development server**
+
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production**
+   ```bash
+   npm run build
+   ```
